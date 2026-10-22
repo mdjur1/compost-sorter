@@ -1,8 +1,10 @@
 // Talks to the Gemini API. Nothing here ever stores or hard-codes a key:
 // the key is passed in from the app, which gets it from the user.
 
-const MODEL = "gemini-3.8-flash";
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+// Models to try in order. If one is busy or unavailable, we move on to the next.
+const MODELS = ["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash-lite"];
+const apiUrl = (model) =>
+  `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
 const PROMPT = `You are a waste-sorting assistant. Look at the item in the photo and decide
 whether it belongs in COMPOST, RECYCLE, or TRASH.
@@ -38,24 +40,33 @@ export async function classifyImage(file, apiKey) {
 
   const base64 = await fileToBase64(file);
 
-  const response = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-goog-api-key": apiKey,
-    },
-    body: JSON.stringify({
-      contents: [
-        {
-          parts: [
-            { inline_data: { mime_type: file.type, data: base64 } },
-            { text: PROMPT },
-          ],
-        },
-      ],
-      generationConfig: { responseMimeType: "application/json" },
-    }),
+  const body = JSON.stringify({
+    contents: [
+      {
+        parts: [
+          { inline_data: { mime_type: file.type, data: base64 } },
+          { text: PROMPT },
+        ],
+      },
+    ],
+    generationConfig: { responseMimeType: "application/json" },
   });
+
+  let response;
+  for (const model of MODELS) {
+    response = await fetch(apiUrl(model), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
+      signal: AbortSignal.timeout(30000),
+      body,
+    });
+    // 503 = busy, 429 = rate limited, 404 = model not available to this key.
+    // In those cases, try the next model. Anything else, stop and handle it below.
+    if (![503, 429, 404].includes(response.status)) break;
+  }
 
   if (!response.ok) {
     if (response.status === 400 || response.status === 403) {
@@ -63,6 +74,9 @@ export async function classifyImage(file, apiKey) {
     }
     if (response.status === 429) {
       throw new Error("Too many requests. Wait a minute and try again.");
+    }
+    if (response.status === 503) {
+      throw new Error("Gemini is busy right now. Try again in a minute.");
     }
     throw new Error(`Gemini request failed (error ${response.status}).`);
   }
