@@ -2,7 +2,7 @@
 
 Take a photo of an item and find out whether it goes in **compost**, **recycling**, or **trash**.
 
-**Live demo:** [PASTE YOUR VERCEL LINK HERE]
+**Live demo:** (https://compost-sorter-5c2i3k12w-milan-djurcic.vercel.app/)
 
 ![Screenshot of Compost Sorter](screenshot.png)
 
@@ -61,4 +61,4 @@ I tried 6 items on my phone: an apple, a blurry photo of an apple, a chip bag, a
 
 ## How I built it
 
-I built this as a small project for [Boisei Labs] to practice calling a vision API from a React app. I used AI tools ([Claude]) to help plan the structure and write code, and I tested, debugged, and deployed it myself. I can explain every file in the repo.
+I built this as a small project for [Boisei Labs] to practice calling a vision API from a React app. I used AI tools (Claude) to help plan the structure and write code, and I tested, debugged, and deployed it myself. I can explain every file in the repo.
