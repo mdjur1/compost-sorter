@@ -66,19 +66,30 @@ export async function classifyImage(file, apiKey) {
 
   let response;
   for (const model of MODELS) {
-    response = await fetch(apiUrl(model), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": apiKey,
-      },
-      signal: AbortSignal.timeout(30000),
-      body,
-    });
+    try {
+      response = await fetch(apiUrl(model), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
+        },
+        signal: AbortSignal.timeout(20000),
+        body,
+      });
+    } catch (err) {
+      if (err.name === "TimeoutError") {
+        // This model was too slow, so try the next one
+        response = { ok: false, status: 408 };
+        continue;
+      }
+      throw new Error("Network problem. Check your connection and try again.");
+    }
     // 503 = busy, 429 = rate limited, 404 = model not available to this key.
     // In those cases, try the next model. Anything else, stop and handle it below.
     if (![503, 429, 404].includes(response.status)) break;
   }
+
+  
 
   if (!response.ok) {
     if (response.status === 400 || response.status === 403) {
@@ -89,6 +100,9 @@ export async function classifyImage(file, apiKey) {
     }
     if (response.status === 503) {
       throw new Error("Gemini is busy right now. Try again in a minute.");
+    }
+    if (response.status === 408) {
+      throw new Error("Gemini took too long to answer. Try again.");
     }
     throw new Error(`Gemini request failed (error ${response.status}).`);
   }
