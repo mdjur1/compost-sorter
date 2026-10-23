@@ -21,15 +21,27 @@ If the photo does not clearly show an item, use category "trash" and say so in "
 Rules vary by city, so go with the most common guidelines in the US.`;
 
 // Turns an image File into base64 text, which is what the API expects.
-function fileToBase64(file) {
+// Shrinks the photo to at most 1024px and converts it to base64 text,
+// which is what the API expects. Smaller uploads mean faster answers.
+function imageToBase64(file, maxSize = 1024) {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      // reader.result looks like "data:image/jpeg;base64,AAAA..." so keep only the part after the comma
-      resolve(reader.result.split(",")[1]);
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      // Keep only the part after the comma: "data:image/jpeg;base64,AAAA..."
+      resolve(canvas.toDataURL("image/jpeg", 0.85).split(",")[1]);
     };
-    reader.onerror = () => reject(new Error("Could not read the image file."));
-    reader.readAsDataURL(file);
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Could not read that image. Try a JPG or PNG."));
+    };
+    img.src = url;
   });
 }
 
@@ -38,13 +50,13 @@ export async function classifyImage(file, apiKey) {
     throw new Error("Add your Gemini API key first, or turn on demo mode.");
   }
 
-  const base64 = await fileToBase64(file);
+  const base64 = await imageToBase64(file);
 
   const body = JSON.stringify({
     contents: [
       {
         parts: [
-          { inline_data: { mime_type: file.type, data: base64 } },
+          { inline_data: { mime_type: "image/jpeg", data: base64 } },
           { text: PROMPT },
         ],
       },
