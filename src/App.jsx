@@ -22,6 +22,7 @@ export default function App() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [resetCount, setResetCount] = useState(0);
 
   function saveKey(key) {
     setApiKey(key);
@@ -38,6 +39,13 @@ export default function App() {
     setFile(selectedFile);
     setResult(null);
     setError("");
+  }
+
+   function handleReset() {
+    setFile(null);
+    setResult(null);
+    setError("");
+    setResetCount((count) => count + 1);
   }
 
   async function handleSort() {
@@ -65,7 +73,7 @@ export default function App() {
         or trash.
       </p>
 
-      <ImageUpload onSelect={handleSelect} disabled={loading} />
+       <ImageUpload key={resetCount} onSelect={handleSelect} disabled={loading} />
 
       <button
         type="button"
@@ -85,6 +93,11 @@ export default function App() {
 
       {error && <p className="error">{error}</p>}
       {result && <ResultCard result={result} />}
+        {(result || error) && (
+        <button type="button" className="reset-button" onClick={handleReset}>
+          Try another
+        </button>
+      )}
 
       <KeyInput
         apiKey={apiKey}
