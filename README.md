@@ -61,4 +61,4 @@ I tried 6 items on my phone: an apple, a blurry photo of an apple, a chip bag, a
 
 ## How I built it
 
-I built this as a small project for [Boisei Labs] to practice calling a vision API from a React app. I used AI tools (Claude) to help plan the structure and write code, and I tested, debugged, and deployed it myself. I can explain every file in the repo.
+I built this to practice calling a vision API from a React app. It also supports InSPIRE, a UIUC student organization working on a compost-sorting project, which plans to use it. I used AI tools to help plan the structure and write code, and I tested, debugged, and deployed it myself. I can explain every file in the repo.
